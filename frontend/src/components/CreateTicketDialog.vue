@@ -12,7 +12,7 @@ const visible = defineModel('visible', { type: Boolean, default: false })
 const emit = defineEmits(['created'])
 
 const PRIORITIES = ['Low', 'Normal', 'High', 'Urgent']
-const blank = () => ({ photo_id: '', style: '', priority: 'Normal', partner: '', rawGuideline: '' })
+const blank = () => ({ photo_id: '', style: '', priority: 'Normal', partner: '', image_url: '', rawGuideline: '' })
 
 const form = reactive(blank())
 const saving = ref(false)
@@ -45,8 +45,8 @@ async function submit() {
   error.value = ''
   try {
     // rawGuideline is UI-only for now; AI parsing will hook in here later.
-    const { photo_id, style, priority, partner } = form
-    await createTicket({ photo_id, style, priority, partner })
+    const { photo_id, style, priority, partner, image_url } = form
+    await createTicket({ photo_id, style, priority, partner, image_url: image_url.trim() || undefined })
     Object.assign(form, blank())
     visible.value = false
     emit('created')
@@ -78,6 +78,10 @@ async function submit() {
       <div class="flex flex-col gap-1">
         <label for="partner">Partner</label>
         <InputText id="partner" v-model="form.partner" />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label for="image_url">Image URL (optional)</label>
+        <InputText id="image_url" v-model="form.image_url" placeholder="/static/images/15377489_5081878_001.jpg" />
       </div>
       <div class="flex flex-col gap-1">
         <label for="guideline">Raw Guideline (AI Parsing)</label>

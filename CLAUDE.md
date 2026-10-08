@@ -4,14 +4,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-This is a **take-home assignment**, not an existing application. As of this writing the
-repo contains only the case brief and mock data under `recolour-case/` — no application
-code has been scaffolded yet. The task is to build the app described in
-`recolour-case/Technical description.rtf`.
+This is a **take-home assignment** (brief in `recolour-case/Technical description.rtf`).
+The app is now built: a monorepo with `backend/` (Express + SQLite via `sqlite3`, never
+`better-sqlite3`) and `frontend/` (Vue 3 + Vite + PrimeVue + Tailwind 4).
 
-When starting work, the first step is almost always scaffolding the project (see Required
-stack below), after which this file should be updated with the real build/test/run
-commands.
+### Commands
+- `npm install` (root) – installs root, backend and frontend deps (via `postinstall`)
+- `npm run dev` (root) – runs API on :3000 and Vite on :5173 (proxies `/api`, `/static`)
+- `npm run build` (root) – frontend production build
+- `npm run copy-assets --prefix backend` – copy `*_001.jpg` sample photos into `backend/public/images`
+- No test suite yet.
+
+### Architecture notes
+- `backend/src/db.js` owns schema, idempotent column migrations (`PRAGMA table_info`) and
+  seeding of the 4 case tickets when `Tickets` is empty. Delete `backend/data/app.db` to reset.
+- Routes in `backend/src/routes/`: tickets, kpis, partners, parse (Claude extraction; returns a
+  mock when `ANTHROPIC_API_KEY` is unset; model overridable via `ANTHROPIC_MODEL`).
+- Status flow: Pending → Sent → Completed → Approved/Rejected. "Awaiting approval" KPI = `Completed`.
+- Roles (Operator/Manager) are a client-side toggle (`frontend/src/stores/role.js`), no auth.
+- `backend/.env` holds the API key and is git-ignored; never print or commit it.
 
 ## The assignment
 

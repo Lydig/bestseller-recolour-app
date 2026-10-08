@@ -71,6 +71,20 @@ watch(statusFilter, loadTickets)
   <DataTable :value="tickets" :loading="loading" dataKey="id" stripedRows>
     <template #empty>No tickets found.</template>
     <Column field="id" header="ID" />
+    <Column header="Preview">
+      <template #body="{ data }">
+        <img
+          v-if="data.image_url"
+          :src="data.image_url"
+          :alt="`Photo ${data.photo_id}`"
+          loading="lazy"
+          class="h-12 w-12 rounded object-cover"
+        />
+        <div v-else class="flex h-12 w-12 items-center justify-center rounded bg-surface-200 text-surface-400">
+          <i class="pi pi-image" />
+        </div>
+      </template>
+    </Column>
     <Column field="photo_id" header="Photo ID" />
     <Column field="style" header="Style" />
     <Column field="priority" header="Priority" />

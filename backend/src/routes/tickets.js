@@ -21,7 +21,7 @@ router.get('/', wrap(async (req, res) => {
 }));
 
 router.post('/', wrap(async (req, res) => {
-  const { photo_id, style, priority = 'Normal', partner } = req.body || {};
+  const { photo_id, style, priority = 'Normal', partner, image_url } = req.body || {};
   if (!photo_id || !style || !partner) {
     return res.status(400).json({ error: 'photo_id, style and partner are required' });
   }
@@ -29,8 +29,8 @@ router.post('/', wrap(async (req, res) => {
     return res.status(400).json({ error: `priority must be one of: ${PRIORITIES.join(', ')}` });
   }
   const { lastID } = await run(
-    'INSERT INTO Tickets (photo_id, style, priority, partner) VALUES (?, ?, ?, ?)',
-    [photo_id, style, priority, partner]
+    'INSERT INTO Tickets (photo_id, style, priority, partner, image_url) VALUES (?, ?, ?, ?, ?)',
+    [photo_id, style, priority, partner, image_url || null]
   );
   res.status(201).json(await get('SELECT * FROM Tickets WHERE id = ?', [lastID]));
 }));

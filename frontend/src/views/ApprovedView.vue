@@ -27,6 +27,12 @@ onMounted(async () => {
   <p v-else-if="!tickets.length" class="text-surface-500">No approved photos yet.</p>
   <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
     <Card v-for="t in tickets" :key="t.id">
+      <template #header>
+        <img v-if="t.image_url" :src="t.image_url" :alt="`Photo ${t.photo_id}`" class="h-56 w-full object-cover" />
+        <div v-else class="flex h-56 w-full items-center justify-center bg-surface-200 text-surface-400">
+          <i class="pi pi-image text-4xl" />
+        </div>
+      </template>
       <template #title>{{ t.photo_id }}</template>
       <template #subtitle>{{ t.style }}</template>
       <template #content>
