@@ -4,25 +4,68 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-This is a **take-home assignment** (brief in `recolour-case/Technical description.rtf`).
-The app is now built: a monorepo with `backend/` (Express + SQLite via `sqlite3`, never
-`better-sqlite3`) and `frontend/` (Vue 3 + Vite + PrimeVue + Tailwind 4).
+A **take-home assignment** (brief in `recolour-case/Technical description.rtf`), now fully
+built: a recolour-request workflow tool. Monorepo with an Express + SQLite backend and a
+Vue 3 frontend. Use plain `sqlite3`, never `better-sqlite3` (native build issues on Windows).
 
-### Commands
-- `npm install` (root) – installs root, backend and frontend deps (via `postinstall`)
-- `npm run dev` (root) – runs API on :3000 and Vite on :5173 (proxies `/api`, `/static`)
+## Layout
+
+```
+package.json          root scripts (concurrently); postinstall installs backend + frontend
+backend/
+  src/server.js       Express app: cors, json, /static, route mounting, /api 404, error handler
+  src/db.js           sqlite3 helpers (run/get/all), schema, column migrations, seeding
+  src/routes/         tickets.js, kpis.js, partners.js, parse.js
+  public/images/      sample photos (*_001.jpg) served at /static/images
+  scripts/copy-assets.js   copies photos from recolour-case/ into public/images
+  data/app.db         SQLite file (git-ignored, auto-created)
+frontend/src/
+  main.js, router.js  PrimeVue (Aura) + Tailwind 4 setup; routes /, /queue, /approved, /partners
+  api.js              fetch wrappers for every endpoint
+  stores/role.js      Operator/Manager ref, persisted in localStorage (no auth)
+  utils.js            formatDate (SQLite UTC timestamps)
+  views/              Dashboard, Queue, Approved, Partners
+  components/CreateTicketDialog.vue   create form + "Auto-Fill with AI"
+recolour-case/        brief and mock data (read-only input)
+```
+
+## Commands
+
+- `npm install` (root) – installs root, backend and frontend deps
+- `npm run dev` (root) – API on :3000, Vite on :5173 (proxies `/api` and `/static`)
 - `npm run build` (root) – frontend production build
-- `npm run copy-assets --prefix backend` – copy `*_001.jpg` sample photos into `backend/public/images`
-- No test suite yet.
+- `npm run copy-assets --prefix backend` – refresh sample photos
+- No test suite. Reset data by deleting `backend/data/app.db` (re-seeds on next start).
 
-### Architecture notes
-- `backend/src/db.js` owns schema, idempotent column migrations (`PRAGMA table_info`) and
-  seeding of the 4 case tickets when `Tickets` is empty. Delete `backend/data/app.db` to reset.
-- Routes in `backend/src/routes/`: tickets, kpis, partners, parse (Claude extraction; returns a
-  mock when `ANTHROPIC_API_KEY` is unset; model overridable via `ANTHROPIC_MODEL`).
-- Status flow: Pending → Sent → Completed → Approved/Rejected. "Awaiting approval" KPI = `Completed`.
-- Roles (Operator/Manager) are a client-side toggle (`frontend/src/stores/role.js`), no auth.
-- `backend/.env` holds the API key and is git-ignored; never print or commit it.
+## Environment (`backend/.env`, git-ignored, see `.env.example`)
+
+- `ANTHROPIC_API_KEY` – optional; when unset `/api/parse` returns a hardcoded mock. Never print or commit it.
+- `ANTHROPIC_MODEL` – optional; default `claude-haiku-4-5-20251001`.
+- `PORT` – optional; default 3000.
+
+## Database schema
+
+- `Tickets(id, photo_id, style, priority, partner, status, created_at, updated_at, image_url)`
+  – `status` default `Pending`, `priority` default `Normal`; `updated_at` is set on every status
+  change and doubles as the approval date. Missing columns are added by migration in `init()`.
+- `Users(id, role UNIQUE)` – seeded with Operator, Manager (not used by the API yet).
+- Seeding: if `Tickets` is empty, the 4 case tickets are inserted (Pending, Sent, Completed, Approved).
+
+## Backend endpoints
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/tickets?status=` | filter validated against the status list |
+| POST | `/api/tickets` | requires `photo_id`, `style`, `partner`; optional `priority`, `image_url` |
+| PATCH | `/api/tickets/:id/status` | body `{status}` |
+| POST | `/api/tickets/:id/send` | sets `Sent`; returns `{success, receipt:{receiptId, partner, sentAt}, ticket}` |
+| GET | `/api/kpis` | `{pending, awaitingApproval}` (awaiting = `Completed`) |
+| GET | `/api/partners` | `{partner,total,active,done}`; always includes FastRetouch, PixelCraft, ColorLab, Internal |
+| POST | `/api/parse` | body `{text}` → `{photo_id, style, priority, partner}` via Claude |
+
+Statuses: Pending, Sent, In Progress, Completed, Rejected, Approved. Priorities: Low, Normal, High, Urgent.
+Flow: Pending → Sent → Completed → Approved/Rejected. Operator creates/sends/returns; Manager
+approves/rejects (Completed tickets only), enforced in the UI only.
 
 ## The assignment
 
